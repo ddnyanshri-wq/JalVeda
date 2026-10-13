@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>JalVeda – Smart Agriculture Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<header>
+    <h1>🌱 JalVeda <span>Smart Agriculture Dashboard</span></h1>
+    <div class="hr">
+        <!-- Location Dropdown -->
+        <select id="locSel"></select>
+        
+        <!-- Language Dropdown (Added here for English, Hindi, Marathi) -->
+        <select id="langSel" onchange="changeLanguage(this.value)">
+            <option value="en">English</option>
+            <option value="hi">हिंदी (Hindi)</option>
+            <option value="mr">मराठी (Marathi)</option>
+        </select>
+
+        <button id="modeBtn" class="ghost"></button>
+        <span id="conn" class="pill"></span>
+    </div>
+</header>
+
+<div id="banner"></div>
+
+<main>
+    <section class="card c-ring">
+        <h3 id="tSoilMoisture">Soil Moisture <small id="tagM"></small></h3>
+        <div class="ringbox">
+            <svg viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="52" class="bg"/>
+                <circle id="ring" cx="60" cy="60" r="52" class="fg" transform="rotate(-90 60 60)"/>
+            </svg>
+            <div id="mval">--%</div>
+        </div>
+        <div id="cond" class="pill">--</div>
+    </section>
+
+    <section class="card stats">
+        <div><b id="tPump">Pump</b><span id="pump">--</span></div>
+        <div><b id="tTemp">Temperature</b><span id="temp">--</span></div>
+        <div><b id="tHum">Humidity</b><span id="hum">--</span></div>
+        <div><b id="tWx">Weather</b><span id="wx">--</span></div>
+        <div><b id="tRainP">Rain probability</b><span id="rainp">--</span></div>
+        <div><b id="tLast">Last irrigation</b><span id="last">--</span></div>
+        <div><b id="tToday">Watered today</b><span id="today">--</span></div>
+        <div><b id="tMode">Mode</b><span id="modeTxt">--</span></div>
+        <p class="note" id="tApiNote">Temperature, humidity and rain come from the Open-Meteo weather API (no on-board temperature sensor).</p>
+    </section>
+
+    <section class="card wide">
+        <h3 id="tLiveSoil">Live soil moisture <small id="tagC"></small></h3>
+        <canvas id="chartM"></canvas>
+    </section>
+
+    <section class="card wide">
+        <h3 id="tForecast">Next 24 h forecast (Open-Meteo)</h3>
+        <canvas id="chartF"></canvas>
+    </section>
+
+    <section class="card">
+        <h3 id="tIrrigControl">Irrigation control</h3>
+        <div class="row">
+            <button id="autoBtn">Automatic</button>
+            <button id="manBtn" class="ghost">Manual</button>
+        </div>
+        <button id="pumpBtn" class="big">Start pump</button>
+        <button id="estop" class="danger">🛑 EMERGENCY STOP</button>
+        <button id="rainBtn" class="ghost demoOnly">Simulate rain forecast</button>
+        <h4 id="tRecentIrrig">Recent irrigation</h4>
+        <ul id="irrig"></ul>
+    </section>
+
+    <section class="card">
+        <h3 id="tSettings">Settings <small>calibrate for YOUR soil</small></h3>
+        <label><span id="tDry">Dry threshold %</span> <input id="cDry" type="number"></label>
+        <label><span id="tTarget">Target moisture %</span> <input id="cTarget" type="number"></label>
+        <label><span id="tWet">Too-wet limit %</span> <input id="cWet" type="number"></label>
+        <label><span id="tMax">Max watering (s)</span> <input id="cMax" type="number"></label>
+        <button id="saveCfg">Save</button>
+        <p class="note" id="tNoteGap">Gap between dry and target is the hysteresis that stops rapid ON/OFF switching.</p>
+    </section>
+
+    <section class="card wide">
+        <h3 id="tNotifHistory">Notification history</h3>
+        <ul id="notif"></ul>
+    </section>
+</main>
+
+<div id="toasts"></div>
+
+<!-- Language Translation Script -->
+<script>
+const uiTexts = {
+    en: {
+        soilMoisture: "Soil Moisture", pump: "Pump", temp: "Temperature", hum: "Humidity", wx: "Weather",
+        rainP: "Rain probability", last: "Last irrigation", today: "Watered today", mode: "Mode",
+        apiNote: "Temperature, humidity and rain come from the Open-Meteo weather API (no on-board temperature sensor).",
+        liveSoil: "Live soil moisture", forecast: "Next 24 h forecast (Open-Meteo)", irrigControl: "Irrigation control",
+        auto: "Automatic", man: "Manual", startPump: "Start pump", stopPump: "Stop pump", estop: "🛑 EMERGENCY STOP",
+        simRain: "Simulate rain forecast", recentIrrig: "Recent irrigation", settings: "Settings",
+        dry: "Dry threshold %", target: "Target moisture %", wet: "Too-wet limit %", max: "Max watering (s)",
+        save: "Save", notifHistory: "Notification history"
+    },
+    hi: {
+        soilMoisture: "मिट्टी की नमी", pump: "पंप", temp: "तापमान", hum: "आर्द्रता", wx: "मौसम",
+        rainP: "बारिश की संभावना", last: "अंतिम सिंचाई", today: "आज पानी दिया गया", mode: "मोड",
+        apiNote: "तापमान, आर्द्रता और बारिश Open-Meteo वेदर API से आते हैं।",
+        liveSoil: "लाइव मिट्टी की नमी", forecast: "अगले 24 घंटे का पूर्वानुमान (Open-Meteo)", irrigControl: "सिंचाई नियंत्रण",
+        auto: "स्वचालित", man: "मैनुअल", startPump: "पंप चालू करें", stopPump: "पंप बंद करें", estop: "🛑 आपातकालीन बंद",
+        simRain: "बारिश का पूर्वानुमान सिमुलेट करें", recentIrrig: "हाल की सिंचाई", settings: "सेटिंग्स",
+        dry: "सूखा सीमा %", target: "लक्ष्य नमी %", wet: "अधिक गीला सीमा %", max: "अधिकतम पानी (s)",
+        save: "सहेजें", notifHistory: "अधिसूचना इतिहास"
+    },
+    mr: {
+        soilMoisture: "मातीतील ओलावा", pump: "पंप", temp: "तापमान", hum: "आर्द्रता", wx: "हवामान",
+        rainP: "पावसाची शक्यता", last: "शेवटचे सिंचन", today: "आज दिलेले पाणी", mode: "मोड",
+        apiNote: "तापमान, आर्द्रता आणि पाऊस Open-Meteo हवामान API मधून येतात.",
+        liveSoil: "लाइव्ह मातीचा ओलावा", forecast: "पुढील २४ तास हवामान अंदाज (Open-Meteo)", irrigControl: "सिंचन नियंत्रण",
+        auto: "स्वयंचलित", man: "मॅन्युअल", startPump: "पंप सुरू करा", stopPump: "पंप थांबवा", estop: "🛑 आणीबाणी थांबा",
+        simRain: "पावसाचा अंदाज सिमुलेट करा", recentIrrig: "अलीकडील सिंचन", settings: "सिंचन सेटिंग्ज",
+        dry: "कोरडी मर्यादा %", target: "लक्ष्य ओलावा %", wet: "खूप ओले मर्यादा %", max: "कमाल पाणी (s)",
+        save: "जतन करा", notifHistory: "सूचना इतिहास"
+    }
+};
+
+function changeLanguage(lang) {
+    const t = uiTexts[lang];
+    if (!t) return;
+    
+    document.getElementById("tSoilMoisture").childNodes[0].textContent = t.soilMoisture + " ";
+    document.getElementById("tPump").innerText = t.pump;
+    document.getElementById("tTemp").innerText = t.temp;
+    document.getElementById("tHum").innerText = t.hum;
+    document.getElementById("tWx").innerText = t.wx;
+    document.getElementById("tRainP").innerText = t.rainP;
+    document.getElementById("tLast").innerText = t.last;
+    document.getElementById("tToday").innerText = t.today;
+    document.getElementById("tMode").innerText = t.mode;
+    document.getElementById("tApiNote").innerText = t.apiNote;
+    document.getElementById("tLiveSoil").childNodes[0].textContent = t.liveSoil + " ";
+    document.getElementById("tForecast").innerText = t.forecast;
+    document.getElementById("tIrrigControl").innerText = t.irrigControl;
+    document.getElementById("autoBtn").innerText = t.auto;
+    document.getElementById("manBtn").innerText = t.man;
+    document.getElementById("pumpBtn").innerText = t.startPump;
+    document.getElementById("estop").innerText = t.estop;
+    document.getElementById("rainBtn").innerText = t.simRain;
+    document.getElementById("tRecentIrrig").innerText = t.recentIrrig;
+    document.getElementById("tSettings").childNodes[0].textContent = t.settings + " ";
+    document.getElementById("tDry").innerText = t.dry;
+    document.getElementById("tTarget").innerText = t.target;
+    document.getElementById("tWet").innerText = t.wet;
+    document.getElementById("tMax").innerText = t.max;
+    document.getElementById("saveCfg").innerText = t.save;
+    document.getElementById("tNotifHistory").innerText = t.notifHistory;
+}
+</script>
+
+<script src="app.js"></script>
+</body>
+</html>
