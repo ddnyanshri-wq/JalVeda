@@ -2,8 +2,6 @@
 
 JalVeda is a web dashboard that monitors soil moisture and controls irrigation automatically. It combines sensor readings with live weather forecasts so water is not wasted when rain is on the way.
 
-🔗 **Live demo:** https://YOUR-USERNAME.github.io/jalveda/
-
 ## Features
 - Live soil moisture ring and history chart
 - Automatic and manual irrigation modes
