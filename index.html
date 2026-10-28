@@ -13,8 +13,8 @@
     <div class="hr">
         <!-- Location Dropdown -->
         <select id="locSel"></select>
-        
-        <!-- Language Dropdown (Added here for English, Hindi, Marathi) -->
+
+        <!-- Language Dropdown -->
         <select id="langSel" onchange="changeLanguage(this.value)">
             <option value="en">English</option>
             <option value="hi">हिंदी (Hindi)</option>
@@ -23,6 +23,7 @@
 
         <button id="modeBtn" class="ghost"></button>
         <span id="conn" class="pill"></span>
+        <button id="serialBtn" class="ghost">🔌 Connect Arduino</button>
     </div>
 </header>
 
@@ -132,7 +133,7 @@ const uiTexts = {
 function changeLanguage(lang) {
     const t = uiTexts[lang];
     if (!t) return;
-    
+
     document.getElementById("tSoilMoisture").childNodes[0].textContent = t.soilMoisture + " ";
     document.getElementById("tPump").innerText = t.pump;
     document.getElementById("tTemp").innerText = t.temp;
